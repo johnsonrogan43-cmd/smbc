@@ -1314,11 +1314,19 @@ function AdminCustomerDetail({ user, id }) {
 function App() {
   const [auth, setAuth] = useState(null);
   const path = window.location.pathname;
+  const isPublicRoute = ["/", "/login", "/register", "/forgot-access-code", "/admin/login"].includes(path);
+
   useEffect(() => {
+    if (isPublicRoute) {
+      setAuth(false);
+      return;
+    }
+
     api("/auth/me")
       .then(setAuth)
       .catch(() => setAuth(false));
-  }, [path]);
+  }, [path, isPublicRoute]);
+
   const logout = async () => {
     await api("/auth/logout", { method: "POST" });
     window.location.href = "/login";
