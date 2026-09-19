@@ -7,15 +7,51 @@ import jwt from 'jsonwebtoken'
 import { MongoClient, ObjectId } from 'mongodb'
 
 const uri = process.env.MONGO_URI
-if (!uri) throw new Error('MONGO_URI is required')
-const client = new MongoClient(uri)
-const db = client.db(process.env.MONGO_DB || 'smbc')
+let startupError = null
+if (!uri) {
+  startupError = new Error(
+    'MONGO_URI is missing. Set environment variables in Vercel Dashboard > Project > Settings > Environment Variables.',
+  )
+  console.error('[STARTUP][ENV_ERROR]', startupError.message)
+}
+if (uri && (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'development-secret')) {
+  console.warn(
+    '[STARTUP][WARN] JWT_SECRET is not set or is the insecure default. Set a strong JWT_SECRET in Vercel env for production.',
+  )
+}
+
+const client = uri ? new MongoClient(uri) : null
+const db = uri ? client.db(process.env.MONGO_DB || 'smbc') : null
 const app = express()
 const port = process.env.PORT || 4000
 const secret = process.env.JWT_SECRET || 'development-secret'
 
+app.use((req, res, next) => {
+  console.log(`[REQ] ${req.method} ${req.url} origin=${req.headers.origin || 'none'}`)
+  next()
+})
+
 app.use(express.json())
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.parse.failed') {
+    console.error('[JSON_PARSE_ERROR]', err.message)
+    return res.status(400).json({ error: 'Invalid JSON body' })
+  }
+  next(err)
+})
 app.use(cookieParser())
+
+app.use((req, res, next) => {
+  if (startupError) {
+    return res.status(500).json({
+      error: 'Server configuration incomplete',
+      detail: startupError.message,
+      hint: 'In Vercel: Project → Settings → Environment Variables → Add MONGO_URI, JWT_SECRET and redeploy.',
+    })
+  }
+  next()
+})
+
 app.use((req, res, next) => {
   const origin = req.headers.origin
   if (origin) {
@@ -122,11 +158,38 @@ const adminOnly = (req, res, next) => req.admin ? next() : res.status(403).json(
 const customerOnly = (req, res, next) => req.user ? next() : res.status(403).json({ error: 'Customer access required' })
 
 let readyPromise = null
+let lastConnectError = null
 const ready = () => {
-  if (!readyPromise) readyPromise = connect().catch(err => { readyPromise = null; throw err })
+  if (!readyPromise) {
+    readyPromise = connect()
+      .then(() => {
+        console.log('[DB] Connected successfully, indexes and seed data applied.')
+        lastConnectError = null
+      })
+      .catch(err => {
+        readyPromise = null
+        lastConnectError = err
+        console.error('[DB][FATAL] MongoDB connection failed:', err.message)
+        if (err.codeName) console.error('[DB][FATAL] codeName:', err.codeName)
+        if (err.code) console.error('[DB][FATAL] code:', err.code)
+        throw err
+      })
+  }
   return readyPromise
 }
-app.use((req, res, next) => { ready().then(() => next()).catch(() => res.status(503).json({ error: 'Database unavailable' })) })
+app.use((req, res, next) => {
+  ready()
+    .then(() => next())
+    .catch(err => {
+      const detail = lastConnectError ? lastConnectError.message : err?.message
+      console.error('[DB][503] Request rejected. DB connect error:', detail)
+      res.status(503).json({
+        error: 'Database unavailable',
+        detail,
+        hint: 'Common Vercel/MongoDB issues: 1) MongoDB Atlas IP whitelist blocks Vercel → allow 0.0.0.0/0 in Atlas Network Access. 2) MONGO_URI has wrong credentials or appName. 3) Cluster is paused.',
+      })
+    })
+})
 
 app.get('/api/health', (_, res) => res.json({ ok: true }))
 app.post('/api/auth/admin/login', async (req, res) => {
@@ -361,7 +424,46 @@ app.post('/api/customer/transfers/:id/verify', auth, customerOnly, async (req, r
 
 const publicUser = user => ({ id: String(user._id), fullName: user.fullName, email: user.email, phone: user.phone, status: user.status, createdAt: user.createdAt })
 
+app.get('/api/debug-env', (_, res) => {
+  res.json({
+    ok: true,
+    runtime: process.env.NODE_ENV || 'development',
+    vercel: process.env.VERCEL === '1',
+    region: process.env.VERCEL_REGION || null,
+    mongoUriSet: Boolean(process.env.MONGO_URI),
+    mongoDb: process.env.MONGO_DB || 'smbc',
+    mongoDbHint: process.env.MONGO_URI
+      ? process.env.MONGO_URI.replace(/\/\/[^@]+@/, '//***:***@').replace(/\?.*/, '?...')
+      : null,
+    jwtSecretSet: Boolean(process.env.JWT_SECRET) && process.env.JWT_SECRET !== 'development-secret',
+    jwtSecretLength: process.env.JWT_SECRET ? process.env.JWT_SECRET.length : 0,
+    cookieCrossSite: process.env.NODE_ENV === 'production' || process.env.COOKIE_CROSS_SITE === 'true',
+    readyPromiseActive: Boolean(readyPromise),
+    lastConnectError: lastConnectError ? { message: lastConnectError.message, code: lastConnectError.code, codeName: lastConnectError.codeName } : null,
+  })
+})
+
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not found', path: req.path, method: req.method })
+})
+
+app.use((err, req, res, next) => {
+  console.error('[500][UNHANDLED]', { method: req.method, url: req.url, message: err?.message, stack: err?.stack?.slice(0, 800) })
+  if (res.headersSent) return next(err)
+  const status = err?.status || err?.statusCode || 500
+  const publicMessage =
+    status >= 500
+      ? 'Internal server error — check Vercel function logs for detail.'
+      : err?.message || 'Request failed'
+  res.status(status).json({
+    error: publicMessage,
+    detail: process.env.NODE_ENV === 'production' ? undefined : err?.message,
+    path: req.path,
+  })
+})
+
 export default app
 if (process.env.VERCEL !== '1') {
+  ready().catch(() => {})
   app.listen(port, () => console.log(`SMBC API listening on http://localhost:${port}`))
 }
