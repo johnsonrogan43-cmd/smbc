@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+﻿﻿import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   ArrowLeftRight,
@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
   LogIn,
   LogOut,
+  Mail,
   Menu,
   Plus,
   ReceiptText,
@@ -193,6 +194,7 @@ function Shell({ children, user, admin, onLogout = logout, active, setActive }) 
     ["Transfers", "/admin/transfers", ArrowLeftRight],
     ["Verification", "/admin/verification", ShieldCheck],
     ["Notifications", "/admin/notifications", Bell],
+    ["Administrators", "/admin/admins", ShieldCheck],
     ["Audit log", "/admin/audit-log", FileText],
     ["Settings", "/admin/settings", ShieldCheck],
   ];
@@ -1311,6 +1313,54 @@ function AdminCustomerDetail({ user, id }) {
     </Shell>
   );
 }
+function AdminManagement({ user }) {
+  const [admins, setAdmins] = useState([]);
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const load = () => api("/admin/admins").then(setAdmins).catch((err) => setError(err.message));
+  useEffect(() => { load(); }, []);
+  const create = async (event) => {
+    event.preventDefault();
+    setError("");
+    setMessage("");
+    try {
+      await api("/admin/admins", { method: "POST", body: JSON.stringify(form) });
+      setForm({ name: "", email: "", password: "" });
+      setMessage("Administrator created successfully.");
+      load();
+    } catch (err) { setError(err.message); }
+  };
+  return (
+    <Shell user={user} admin active="/admin/admins" setActive={() => {}}>
+      <PageTitle kicker="ACCESS CONTROL" title="Administrators" subtitle="Create and review the administrators who can operate this portal." />
+      <div className="panel form-panel">
+        <span className="section-kicker">CREATE ADMINISTRATOR</span>
+        <form className="inline-form" onSubmit={create}>
+          <input required placeholder="Full name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+          <input required type="email" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+          <input required minLength="8" type="password" placeholder="Password (min 8 chars)" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+          <button className="primary-button">Create admin <Plus size={16} /></button>
+        </form>
+        <Notice success={message} />
+        <Notice error={error} />
+      </div>
+      <section className="panel">
+        <PanelHeading kicker="DATABASE RECORDS" title="Administrator list" />
+        {admins.map((item) => (
+          <div className="customer-row" key={item.id}>
+            <div className="avatar">{initials(item.name)}</div>
+            <div className="account-info">
+              <b>{item.name}</b>
+              <span>{item.email}{item.email === user?.email ? " · (you)" : ""}</span>
+            </div>
+            <span className="status-badge">ACTIVE</span>
+          </div>
+        ))}
+      </section>
+    </Shell>
+  );
+}
 function App() {
   const [auth, setAuth] = useState(null);
   const path = window.location.pathname;
@@ -1354,6 +1404,7 @@ function App() {
   if (auth.role === "admin") {
     if (path === "/admin/customers") return <AdminCustomers user={auth} />;
     if (path.startsWith("/admin/customers/")) return <AdminCustomerDetail user={auth} id={path.split("/").pop()} />;
+    if (path === "/admin/admins") return <AdminManagement user={auth} />;
     if (path === "/admin/accounts") return <AdminAccounts user={auth} />;
     if (path === "/admin/transactions") return <AdminTransactions user={auth} />;
     if (path === "/admin/transfers") return <AdminTransfers user={auth} />;

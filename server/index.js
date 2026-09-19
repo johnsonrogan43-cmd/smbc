@@ -137,7 +137,7 @@ app.post('/api/auth/customer/register', async (req, res) => {
   await coll('notifications').insertOne({ userId: String(insertedId), title: 'Welcome to SMBC', body: 'Your customer profile is ready. Use your access code to sign in.', createdAt: new Date() })
   res.status(201).json({ fullName, email })
 })
-app.post('/api/auth/forgot-access-code', async (req, res) => {
+const forgotAccessCode = async (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase()
   const user = await coll('users').findOne({ email })
   if (user) {
@@ -148,9 +148,29 @@ app.post('/api/auth/forgot-access-code', async (req, res) => {
     await coll('emailNotifications').insertOne({ userId: String(user._id), subject: 'SMBC access code reset', body: `${body} New access code: ${accessCode}`, sentAt: new Date() })
   }
   res.json({ message: 'If an account matches that email, access-code recovery instructions have been sent.' })
-})
+}
+app.post('/api/auth/forgot-access-code', forgotAccessCode)
+app.post('/api/auth/customer/forgot-access-code', forgotAccessCode)
 app.post('/api/auth/logout', async (req, res) => { if (req.cookies.smbc_session) await coll('sessions').deleteMany({ tokenHash: hash(req.cookies.smbc_session) }); res.clearCookie('smbc_session').json({ ok: true }) })
 app.get('/api/auth/me', auth, (req, res) => res.json(req.admin ? { role: 'admin', name: req.admin.name } : { role: 'customer', name: req.user.fullName, userId: String(req.user._id) }))
+
+const publicAdmin = admin => ({ id: String(admin._id), name: admin.name, email: admin.email, createdAt: admin.createdAt })
+app.get('/api/admin/admins', auth, adminOnly, async (_, res) => {
+  const admins = await coll('admins').find({}).sort({ createdAt: -1 }).toArray()
+  res.json(admins.map(publicAdmin))
+})
+app.post('/api/admin/admins', auth, adminOnly, async (req, res) => {
+  const name = String(req.body.name || '').trim()
+  const email = String(req.body.email || '').trim().toLowerCase()
+  const password = String(req.body.password || '')
+  if (!name || !email || !password) return res.status(400).json({ error: 'Name, email and password are required' })
+  if (password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' })
+  if (!/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ error: 'Enter a valid email address' })
+  if (await coll('admins').findOne({ email })) return res.status(409).json({ error: 'An admin with this email already exists' })
+  const { insertedId } = await coll('admins').insertOne({ name, email, passwordHash: await bcrypt.hash(password, 12), createdAt: new Date() })
+  await coll('auditLogs').insertOne({ adminId: String(req.admin._id), action: 'CREATE_ADMIN', entityType: 'ADMIN', entityId: String(insertedId), createdAt: new Date() })
+  res.status(201).json(publicAdmin(await coll('admins').findOne({ _id: insertedId })))
+})
 
 app.get('/api/admin/stats', auth, adminOnly, async (_, res) => {
   const [customers, accounts, pending, completed, transactions] = await Promise.all([
