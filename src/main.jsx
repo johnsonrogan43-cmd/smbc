@@ -1,4 +1,4 @@
-﻿﻿import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   ArrowLeftRight,
@@ -24,8 +24,9 @@ import {
 } from "lucide-react";
 import "./styles.css";
 
+const API_BASE = (import.meta.env.VITE_API_URL || "/api").replace(/\/$/, "");
 const api = async (path, options = {}) => {
-  const response = await fetch(`/api${path}`, {
+  const response = await fetch(`${API_BASE}${path}`, {
     credentials: "include",
     headers: { "Content-Type": "application/json", ...options.headers },
     ...options,

@@ -16,6 +16,18 @@ const secret = process.env.JWT_SECRET || 'development-secret'
 
 app.use(express.json())
 app.use(cookieParser())
+app.use((req, res, next) => {
+  const origin = req.headers.origin
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin)
+    res.setHeader('Access-Control-Allow-Credentials', 'true')
+    res.setHeader('Vary', 'Origin')
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+  if (req.method === 'OPTIONS') return res.sendStatus(204)
+  next()
+})
 
 const coll = name => db.collection(name)
 const oid = id => { try { return new ObjectId(id) } catch { return id } }
@@ -23,6 +35,9 @@ const publicAccount = account => ({ ...account, id: String(account._id), balance
 const publicTransaction = transaction => ({ ...transaction, id: String(transaction._id), amount: Number(transaction.amount) })
 const publicTransfer = transfer => ({ ...transfer, id: String(transfer._id), amount: Number(transfer.amount), fee: Number(transfer.fee), stages: [1, 2, 3, 4].map(stage => ({ stage, status: stage < transfer.currentStage || transfer.status === 'COMPLETED' ? 'COMPLETED' : stage === transfer.currentStage && transfer.status === 'VERIFICATION_REQUIRED' ? 'PENDING' : 'LOCKED' })) })
 const tokenFor = payload => jwt.sign(payload, secret, { expiresIn: '8h' })
+const cookieOptions = () => (process.env.NODE_ENV === 'production' || process.env.COOKIE_CROSS_SITE === 'true')
+  ? { httpOnly: true, sameSite: 'none', secure: true }
+  : { httpOnly: true, sameSite: 'lax' }
 const hash = value => crypto.createHash('sha256').update(value).digest('hex')
 const code = () => `SMB-${crypto.randomInt(1000, 10000)}`
 const reference = () => `TXN-${crypto.randomBytes(4).toString('hex').toUpperCase()}`
@@ -106,6 +121,13 @@ async function auth(req, res, next) {
 const adminOnly = (req, res, next) => req.admin ? next() : res.status(403).json({ error: 'Admin access required' })
 const customerOnly = (req, res, next) => req.user ? next() : res.status(403).json({ error: 'Customer access required' })
 
+let readyPromise = null
+const ready = () => {
+  if (!readyPromise) readyPromise = connect().catch(err => { readyPromise = null; throw err })
+  return readyPromise
+}
+app.use((req, res, next) => { ready().then(() => next()).catch(() => res.status(503).json({ error: 'Database unavailable' })) })
+
 app.get('/api/health', (_, res) => res.json({ ok: true }))
 app.post('/api/auth/admin/login', async (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase()
@@ -113,7 +135,7 @@ app.post('/api/auth/admin/login', async (req, res) => {
   if (!admin || !(await bcrypt.compare(String(req.body.password || ''), admin.passwordHash))) return res.status(401).json({ error: 'Invalid email or password' })
   const token = tokenFor({ kind: 'admin', id: String(admin._id) })
   await coll('sessions').insertOne({ tokenHash: hash(token), adminId: String(admin._id), expiresAt: new Date(Date.now() + 8 * 3600000), createdAt: new Date() })
-  res.cookie('smbc_session', token, { httpOnly: true, sameSite: 'lax' }).json({ role: 'admin', name: admin.name })
+  res.cookie('smbc_session', token, cookieOptions()).json({ role: 'admin', name: admin.name })
 })
 app.post('/api/auth/customer/login', async (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase()
@@ -121,7 +143,7 @@ app.post('/api/auth/customer/login', async (req, res) => {
   if (!user || user.status !== 'ACTIVE' || !user.passwordHash || !(await bcrypt.compare(String(req.body.password || ''), user.passwordHash))) return res.status(401).json({ error: 'Invalid customer credentials' })
   const token = tokenFor({ kind: 'customer', id: String(user._id) })
   await coll('sessions').insertOne({ tokenHash: hash(token), userId: String(user._id), expiresAt: new Date(Date.now() + 8 * 3600000), createdAt: new Date() })
-  res.cookie('smbc_session', token, { httpOnly: true, sameSite: 'lax' }).json({ role: 'customer', name: user.fullName })
+  res.cookie('smbc_session', token, cookieOptions()).json({ role: 'customer', name: user.fullName })
 })
 app.post('/api/auth/customer/register', async (req, res) => {
   const fullName = String(req.body.fullName || '').trim()
@@ -337,7 +359,9 @@ app.post('/api/customer/transfers/:id/verify', auth, customerOnly, async (req, r
   res.json({ status: 'VERIFICATION_REQUIRED', currentStage: stage + 1 })
 })
 
-app.listen(port, () => console.log(`SMBC API listening on http://localhost:${port}`))
-
 const publicUser = user => ({ id: String(user._id), fullName: user.fullName, email: user.email, phone: user.phone, status: user.status, createdAt: user.createdAt })
-connect().catch(err => { console.error('MongoDB connection failed:', err.message); process.exit(1) })
+
+export default app
+if (process.env.VERCEL !== '1') {
+  app.listen(port, () => console.log(`SMBC API listening on http://localhost:${port}`))
+}
