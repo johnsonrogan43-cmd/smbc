@@ -1,0 +1,27 @@
+{
+  "name": "kiyora-bank-dashboard",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently --kill-others --names api,web \"npm run server\" \"vite --host 127.0.0.1\"",
+    "server": "node server/index.js",
+    "build": "vite build",
+    "preview": "vite preview",
+    "db:seed": "node prisma/seed.js"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "latest",
+    "bcryptjs": "latest",
+    "concurrently": "9.2.1",
+    "cookie-parser": "latest",
+    "dotenv": "^18.0.1",
+    "express": "latest",
+    "jsonwebtoken": "latest",
+    "lucide-react": "latest",
+    "mongodb": "^7.6.0",
+    "react": "latest",
+    "react-dom": "latest",
+    "vite": "latest"
+  }
+}
