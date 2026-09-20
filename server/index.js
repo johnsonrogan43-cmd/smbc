@@ -417,8 +417,19 @@ app.get('/api/customer/transfers/:id', auth, customerOnly, async (req, res) => {
 app.post('/api/customer/transfers/:id/verify', auth, customerOnly, async (req, res) => {
   const transfer = await coll('transfers').findOne({ _id: oid(req.params.id), userId: String(req.user._id) })
   const stage = Number(req.body.stage)
+  const code = String(req.body.code || '')
   const item = await coll('verificationCodes').findOne({ transferId: String(transfer?._id), stage })
-  if (!transfer || transfer.status === 'COMPLETED' || transfer.currentStage !== stage || !item || item.sentAt === null || item.usedAt || item.expiresAt < new Date() || item.codeHash !== hash(String(req.body.code || ''))) return res.status(400).json({ error: 'Invalid verification code' })
+
+  console.log('[VERIFY]', { transferId: req.params.id, userId: String(req.user._id), stage, codeLen: code.length, hasTransfer: !!transfer, hasItem: !!item, transferStage: transfer?.currentStage, itemSentAt: item?.sentAt, itemUsedAt: item?.usedAt, itemExpires: item?.expiresAt, codesMatch: item ? item.codeHash === hash(code) : false })
+
+  if (!transfer) return res.status(400).json({ error: 'Transfer not found' })
+  if (transfer.status === 'COMPLETED') return res.status(400).json({ error: 'Transfer already completed' })
+  if (transfer.currentStage !== stage) return res.status(400).json({ error: `Stage mismatch: expected ${transfer.currentStage}, got ${stage}` })
+  if (!item) return res.status(400).json({ error: `No verification code found for stage ${stage}` })
+  if (item.sentAt === null) return res.status(400).json({ error: 'Code not sent yet. Ask admin to send notification.' })
+  if (item.usedAt) return res.status(400).json({ error: 'Code already used' })
+  if (item.expiresAt < new Date()) return res.status(400).json({ error: 'Code expired' })
+  if (item.codeHash !== hash(code)) return res.status(400).json({ error: 'Incorrect code' })
   if (stage === 4) {
     await coll('verificationCodes').updateOne({ _id: item._id }, { $set: { usedAt: new Date() } })
     await coll('transfers').updateOne({ _id: transfer._id }, { $set: { status: 'COMPLETED', currentStage: 5, completedAt: new Date() } })
