@@ -26,7 +26,7 @@ button:focus-visible { outline: 3px solid rgba(0, 59, 112, .3); outline-offset: 
   justify-content: space-between;
 }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-.brand-logo { height: 32px; width: auto; display: block; flex-shrink: 0; filter: brightness(0) invert(1); }
+.brand-logo { height: 30px; width: auto; display: block; flex-shrink: 0; filter: brightness(0) invert(1); object-fit: contain; }
 .header-tools { display: flex; align-items: center; gap: 6px; color: white; }
 .header-tools button { border: 0; background: none; }
 .header-icon { border: 0; background: none; color: white; display: grid; place-items: center; padding: 8px; border-radius: 6px; transition: background .15s ease; cursor: pointer; }
@@ -410,7 +410,7 @@ textarea { min-height: 88px; resize: vertical; }
   border-radius: 8px;
   box-shadow: 0 4px 24px rgba(37,91,227,.06);
 }
-.login-panel .brand-logo { height: 44px; }
+.login-panel .brand-logo { height: 40px; filter: none; }
 .login-heading { margin: 36px 0 24px; }
 .login-heading h1 { font-size: 24px; margin-top: 8px; color: #1A3FA0; }
 .login-heading p { color: #6B7785; margin-top: 8px; font-size: 13px; }
@@ -538,7 +538,7 @@ textarea { min-height: 88px; resize: vertical; }
 .home-page { min-height: 100vh; background: #F5F7FA; }
 .home-header { background: white; border-bottom: 1px solid #E8ECF0; padding: 0 32px; height: 64px; display: flex; align-items: center; position: sticky; top: 0; z-index: 50; }
 .home-header-inner { max-width: 1200px; margin: 0 auto; width: 100%; display: flex; align-items: center; justify-content: space-between; }
-.home-logo { height: 32px; width: auto; }
+.home-logo { height: 36px; width: auto; filter: none; }
 .home-header-links { display: flex; align-items: center; gap: 16px; }
 .home-login-btn { background: #255BE3; color: white; padding: 8px 20px; border-radius: 4px; font-size: 13px; font-weight: 600; text-decoration: none; transition: background .15s; }
 .home-login-btn:hover { background: #1A3FA0; }
@@ -570,8 +570,8 @@ textarea { min-height: 88px; resize: vertical; }
 .promo-text p { font-size: 13px; opacity: .9; margin-bottom: 16px; }
 .promo-btn { background: white; color: #1A1F36; border: none; padding: 8px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: transform .15s; }
 .promo-btn:hover { transform: scale(1.03); }
-.promo-logo-wrap { background: white; padding: 10px 14px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.1); flex-shrink: 0; }
-.promo-logo { width: 60px; height: auto; display: block; }
+.promo-logo-wrap { background: white; padding: 12px 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.1); flex-shrink: 0; }
+.promo-logo { width: 70px; height: auto; display: block; filter: none; object-fit: contain; }
 .promo-dots { display: flex; justify-content: center; gap: 8px; padding: 10px; background: white; }
 .promo-dots span { width: 8px; height: 8px; border-radius: 50%; background: #D6DEE6; transition: background .3s; }
 .promo-dots span.active { background: #255BE3; }

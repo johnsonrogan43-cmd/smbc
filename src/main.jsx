@@ -142,7 +142,7 @@ function LanguageSwitcher() {
 function Brand({ admin = false }) {
   return (
     <a className="brand" href={admin ? "/admin/dashboard" : "/dashboard"}>
-      <img className="brand-logo" src="/citibank-logo.svg" alt="Citibank" />
+      <img className="brand-logo" src="/citi-logo.png" alt="Citibank" />
     </a>
   );
 }
@@ -1496,7 +1496,7 @@ function Home() {
     <div className="home-page">
       <header className="home-header">
         <div className="home-header-inner">
-          <img src="/citibank-logo.svg" alt="Citibank" className="home-logo" />
+          <img src="/citi-logo.png" alt="Citibank" className="home-logo" />
           <div className="home-header-links">
             <a href="/login" className="home-login-btn">Sign In</a>
           </div>
@@ -1513,7 +1513,7 @@ function Home() {
             </div>
           </div>
           <div className="home-hero-image">
-            <img src="/citibank-logo.svg" alt="Citibank" />
+            <img src="/citi-logo.png" alt="Citibank" />
           </div>
         </div>
       </section>
