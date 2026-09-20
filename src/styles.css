@@ -25,11 +25,8 @@ button:focus-visible { outline: 3px solid rgba(0, 59, 112, .3); outline-offset: 
   align-items: center;
   justify-content: space-between;
 }
-.brand { display: flex; align-items: center; gap: 10px; font-size: 15px; text-decoration: none; }
-.brand-logo { width: 36px; height: 36px; }
-.brand-name strong { font-weight: 700; font-size: 16px; }
-.brand-name b::before { content: 'citi'; font-weight: 700; color: #255BE3; }
-.brand-name small { display: block; font-size: 9px; opacity: .7; letter-spacing: .04em; font-weight: 400; margin-top: 1px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.brand-logo { height: 32px; width: auto; display: block; flex-shrink: 0; }
 .header-tools { display: flex; align-items: center; gap: 6px; color: white; }
 .header-tools button { border: 0; background: none; }
 .header-icon { border: 0; background: none; color: white; display: grid; place-items: center; padding: 8px; border-radius: 6px; transition: background .15s ease; cursor: pointer; }
@@ -413,8 +410,7 @@ textarea { min-height: 88px; resize: vertical; }
   border-radius: 8px;
   box-shadow: 0 4px 24px rgba(37,91,227,.06);
 }
-.login-panel .brand-logo { width: 48px; height: 48px; }
-.login-panel .brand-name b::before { font-size: 22px; }
+.login-panel .brand-logo { height: 44px; }
 .login-heading { margin: 36px 0 24px; }
 .login-heading h1 { font-size: 24px; margin-top: 8px; color: #1A3FA0; }
 .login-heading p { color: #6B7785; margin-top: 8px; font-size: 13px; }
@@ -441,7 +437,7 @@ textarea { min-height: 88px; resize: vertical; }
 @media (max-width: 900px) {
 	.header-inner { padding: 0 20px; }
 	.brand { font-size: 13px; }
-	.brand-logo { width: 30px; height: 30px; }
+	.brand-logo { height: 26px; }
 	.header-name { display: none; }
 	.portal-frame { display: block; }
 	.portal-frame .side-nav {
@@ -514,7 +510,7 @@ textarea { min-height: 88px; resize: vertical; }
 	.top-header { height: 56px; }
 	.header-inner { padding: 0 14px; }
 	.brand { gap: 6px; font-size: 12px; }
-	.brand-logo { width: 28px; height: 28px; }
+	.brand-logo { height: 24px; }
 	.language-switcher { display: inline-flex; gap: 2px; font-size: 10px; }
 	.header-icon { padding: 5px; }
 	.portal-frame { min-height: calc(100vh - 59px); }
@@ -536,4 +532,56 @@ textarea { min-height: 88px; resize: vertical; }
 	.login-panel { padding: 22px 16px; }
 	.login-heading { margin: 28px 0 18px; }
 	.login-heading h1 { font-size: 22px; }
+}
+
+/* ── Home Page ── */
+.home-page { min-height: 100vh; background: #F5F7FA; }
+.home-header { background: white; border-bottom: 1px solid #E8ECF0; padding: 0 32px; height: 64px; display: flex; align-items: center; position: sticky; top: 0; z-index: 50; }
+.home-header-inner { max-width: 1200px; margin: 0 auto; width: 100%; display: flex; align-items: center; justify-content: space-between; }
+.home-logo { height: 32px; width: auto; }
+.home-header-links { display: flex; align-items: center; gap: 16px; }
+.home-login-btn { background: #255BE3; color: white; padding: 8px 20px; border-radius: 4px; font-size: 13px; font-weight: 600; text-decoration: none; transition: background .15s; }
+.home-login-btn:hover { background: #1A3FA0; }
+.home-hero { padding: 60px 32px; background: linear-gradient(135deg, #EBF0FF 0%, #F5F7FA 100%); }
+.home-hero-inner { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center; }
+.home-hero-text h1 { font-size: 40px; font-weight: 700; color: #1A1F36; line-height: 1.15; margin-bottom: 16px; }
+.home-hero-text p { font-size: 18px; color: #5E6278; margin-bottom: 28px; line-height: 1.6; }
+.home-hero-buttons { display: flex; gap: 12px; }
+.home-hero-buttons .primary-button { padding: 12px 28px; font-size: 14px; }
+.home-hero-buttons .secondary-button { padding: 12px 28px; font-size: 14px; }
+.home-hero-image { display: flex; justify-content: center; align-items: center; }
+.home-hero-image img { max-width: 320px; width: 100%; opacity: .15; }
+.home-slider-section { max-width: 1200px; margin: 0 auto; padding: 0 32px; }
+.home-features { padding: 60px 32px; background: white; }
+.home-features-inner { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+.home-feature { text-align: center; padding: 32px 20px; border: 1px solid #E8ECF0; border-radius: 8px; transition: box-shadow .15s; }
+.home-feature:hover { box-shadow: 0 4px 16px rgba(37,91,227,.08); }
+.home-feature-icon { font-size: 36px; margin-bottom: 16px; }
+.home-feature h3 { color: #1A1F36; font-size: 18px; margin-bottom: 8px; }
+.home-feature p { color: #5E6278; font-size: 14px; line-height: 1.5; }
+.home-footer { background: #1A1F36; color: rgba(255,255,255,.6); text-align: center; padding: 24px; font-size: 12px; }
+
+/* ── Bank Promo Slider ── */
+.promo-slider { overflow: hidden; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,.08); margin-bottom: 24px; }
+.promo-track { display: flex; transition: transform .7s ease-out; }
+.promo-slide { min-width: 100%; height: 160px; padding: 28px 32px; color: white; display: flex; align-items: center; justify-content: space-between; }
+.promo-text h3 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
+.promo-text p { font-size: 13px; opacity: .9; margin-bottom: 16px; }
+.promo-btn { background: white; color: #1A1F36; border: none; padding: 8px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: transform .15s; }
+.promo-btn:hover { transform: scale(1.03); }
+.promo-logo-wrap { background: white; padding: 10px 14px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.1); flex-shrink: 0; }
+.promo-logo { width: 60px; height: auto; display: block; }
+.promo-dots { display: flex; justify-content: center; gap: 8px; padding: 10px; background: white; }
+.promo-dots span { width: 8px; height: 8px; border-radius: 50%; background: #D6DEE6; transition: background .3s; }
+.promo-dots span.active { background: #255BE3; }
+
+@media (max-width: 768px) {
+  .home-hero-inner { grid-template-columns: 1fr; text-align: center; }
+  .home-hero-text h1 { font-size: 28px; }
+  .home-hero-buttons { justify-content: center; }
+  .home-hero-image { display: none; }
+  .home-features-inner { grid-template-columns: 1fr; }
+  .promo-slide { height: 140px; padding: 20px; }
+  .promo-text h3 { font-size: 16px; }
+  .promo-logo-wrap { display: none; }
 }
