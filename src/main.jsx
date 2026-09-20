@@ -778,7 +778,12 @@ function TransferDetail({ user, id }) {
         </div>
       </section>
       <section className="stage-grid">
-        {[1, 2, 3, 4].map((stage) => {
+        {[
+          { stage: 1, name: "Flat Fee", desc: "Fixed price per transaction" },
+          { stage: 2, name: "Percentage Fee", desc: "Share of total amount" },
+          { stage: 3, name: "Bank vs. App", desc: "Compare fee structures" },
+          { stage: 4, name: "Tiered Bracket", desc: "Bracketed price bands" },
+        ].map(({ stage, name, desc }) => {
           const item = transfer?.verificationCodes?.find(
             (codeItem) => codeItem.stage === stage,
           );
@@ -792,11 +797,8 @@ function TransferDetail({ user, id }) {
               key={stage}
             >
               <span className="stage-number">0{stage}</span>
-              <h2>Stage {stage}</h2>
-              <p>
-                {transfer?.stages?.find((item) => item.stage === stage)
-                  ?.status || "LOCKED"}
-              </p>
+              <h2>{name}</h2>
+              <p>{desc}</p>
               {available && (
                 <>
                   {!item ? (
@@ -953,48 +955,56 @@ function TransferProcess({ user, id }) {
     api(`/customer/transfers/${id}`).then(setTransfer);
   }, [id]);
   const stages = transfer?.currentStage || 1;
+  const stageNames = { 1: "Flat Fee", 2: "Percentage Fee", 3: "Bank vs. App", 4: "Tiered Bracket Fee" };
+  const stagePercent = { 1: 25, 2: 50, 3: 75, 4: 100 };
   return (
     <Shell user={user} active="/transfers" setActive={() => {}}>
       <PageTitle
         kicker="TRANSFER STATUS"
         title={
           transfer?.status === "COMPLETED"
-            ? "Transfer completed"
-            : "Verification required"
+            ? "Payment Successful"
+            : stageNames[stages] || "Verification required"
         }
         subtitle={
           transfer?.status === "COMPLETED"
-            ? "Your fictional transfer is complete."
-            : "The transfer is ready for staged application verification."
+            ? "Your transfer has been completed successfully."
+            : `Stage ${stages} of 4 — ${stageNames[stages]}`
         }
       />
       <section className="panel processing-panel">
         <CircleCheck
-          size={42}
+          size={52}
           className={
             transfer?.status === "COMPLETED" ? "green-icon" : "blue-icon"
           }
         />
         <h2>
           {transfer?.status === "COMPLETED"
-            ? yen(transfer.amount)
+            ? "Payment Successful"
             : "Processing transfer"}
         </h2>
         <p>
           {transfer?.recipientName} · {transfer?.bankName}
         </p>
         {transfer?.status === "COMPLETED" ? (
-          <div className="completion-reference">
-            Reference: {transfer.reference}
-          </div>
+          <>
+            <div className="success-amount">{yen(transfer.amount)}</div>
+            <div className="completion-reference">
+              Reference: {transfer.reference}
+            </div>
+            <a className="primary-button" href="/dashboard" style={{ marginTop: 16 }}>
+              Back to Dashboard
+            </a>
+          </>
         ) : (
           <>
             <div className="progress-track">
-              <span style={{ width: "89%" }} />
+              <span style={{ width: `${stagePercent[stages]}%` }} />
             </div>
-            <b>89%</b>
+            <b>{stagePercent[stages]}%</b>
             <a className="primary-button" href={`/transfers/${id}/verify`}>
-              Open Stage {stages}
+              Continue to {stageNames[stages]}
             </a>
           </>
         )}
@@ -1025,12 +1035,25 @@ function Verify({ user, id }) {
       setError(err.message);
     }
   };
+  const stageNames = {
+    1: "Flat Fee",
+    2: "Percentage Fee",
+    3: "Bank vs. App",
+    4: "Tiered Bracket Fee",
+  };
+  const stageDescriptions = {
+    1: "A fixed price per transaction. This flat fee covers processing costs regardless of the transfer amount.",
+    2: "A share of the total amount sent. This percentage-based fee scales with your transfer value.",
+    3: "Traditional banks charge $25–$50; digital apps charge much less. Compare and confirm the fee structure.",
+    4: "The fee is determined by bracketed price bands based on the total sum of the transfer.",
+  };
+  const stagePercent = { 1: 25, 2: 50, 3: 75, 4: 100 };
   return (
     <Shell user={user} active="/transfers" setActive={() => {}}>
       <PageTitle
-        kicker="APPLICATION VERIFICATION"
-        title={`Stage ${transfer?.currentStage || 1} of 4`}
-        subtitle="Enter the fictional code sent by Citibank."
+        kicker="TRANSFER FEE VERIFICATION"
+        title={stageNames[transfer?.currentStage || 1]}
+        subtitle={stageDescriptions[transfer?.currentStage || 1]}
       />
       <div className="verification-dots">
         {[1, 2, 3, 4].map((stage) => (
@@ -1046,26 +1069,35 @@ function Verify({ user, id }) {
           />
         ))}
       </div>
-      <form className="panel verification-panel" onSubmit={submit}>
+      <div className="panel verification-panel">
+        <div className="verify-stage-header">
+          <span className="verify-stage-badge">Stage {transfer?.currentStage || 1} of 4</span>
+          <span className="verify-stage-percent">{stagePercent[transfer?.currentStage || 1]}%</span>
+        </div>
+        <div className="verify-progress">
+          <div className="verify-progress-bar" style={{ width: `${stagePercent[transfer?.currentStage || 1]}%` }} />
+        </div>
         <ShieldCheck size={34} className="green-icon" />
-        <h2>Enter application verification code</h2>
-        <p>
-          Check the notification center for the code from your administrator.
-        </p>
+        <h2>{stageNames[transfer?.currentStage || 1]}</h2>
+        <p>{stageDescriptions[transfer?.currentStage || 1]}</p>
         <Notice error={error} />
-        <input
-          className="code-input"
-          required
-          inputMode="numeric"
-          maxLength="6"
-          value={value}
-          onChange={(event) => setValue(event.target.value.replace(/\D/g, ""))}
-          placeholder="000000"
-        />
-        <button className="primary-button">
+        <div className="verify-input-group">
+          <label>Enter verification code</label>
+          <input
+            className="code-input"
+            required
+            inputMode="numeric"
+            maxLength="6"
+            value={value}
+            onChange={(event) => setValue(event.target.value.replace(/\D/g, ""))}
+            placeholder="000000"
+          />
+          <small>Check the notification center for the code from your administrator.</small>
+        </div>
+        <button className="primary-button" onClick={submit}>
           Continue <ChevronRight size={16} />
         </button>
-      </form>
+      </div>
     </Shell>
   );
 }

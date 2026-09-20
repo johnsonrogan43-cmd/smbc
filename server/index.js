@@ -354,10 +354,11 @@ app.post('/api/admin/transfers/:id/notify', auth, adminOnly, async (req, res) =>
   const item = await coll('verificationCodes').findOne({ transferId: req.params.id, stage })
   const transfer = await coll('transfers').findOne({ _id: oid(req.params.id) })
   if (!item || item.usedAt || item.expiresAt < new Date() || !transfer) return res.status(400).json({ error: 'Generate a valid code first' })
-  const body = `Your Citibank application verification code is: ${item.codePreview}. It expires in 10 minutes.`
+  const stageNames = { 1: 'Flat Fee', 2: 'Percentage Fee', 3: 'Bank vs. App', 4: 'Tiered Bracket Fee' }
+  const body = `Your Citibank ${stageNames[stage]} verification code is: ${item.codePreview}. It expires in 10 minutes.`
   await coll('verificationCodes').updateOne({ _id: item._id }, { $set: { sentAt: new Date() } })
-  await coll('notifications').insertOne({ userId: transfer.userId, title: `Verification Code · Stage ${stage}`, body, createdAt: new Date() })
-  await coll('emailNotifications').insertOne({ userId: transfer.userId, transferId: String(transfer._id), subject: `Citibank verification · Stage ${stage}`, body, sentAt: new Date() })
+  await coll('notifications').insertOne({ userId: transfer.userId, title: `${stageNames[stage]} · Code`, body, createdAt: new Date() })
+  await coll('emailNotifications').insertOne({ userId: transfer.userId, transferId: String(transfer._id), subject: `Citibank · ${stageNames[stage]}`, body, sentAt: new Date() })
   res.json({ sent: true })
 })
 app.get('/api/admin/audit-log', auth, adminOnly, async (_, res) => res.json((await coll('auditLogs').find({}).sort({ createdAt: -1 }).limit(100).toArray()).map(log => ({ ...log, id: String(log._id), adminId: log.adminId, action: log.action, entityType: log.entityType, entityId: log.entityId, createdAt: log.createdAt }))))
@@ -423,7 +424,7 @@ app.post('/api/customer/transfers/:id/verify', auth, customerOnly, async (req, r
     await coll('transfers').updateOne({ _id: transfer._id }, { $set: { status: 'COMPLETED', currentStage: 5, completedAt: new Date() } })
     await coll('accounts').updateOne({ _id: oid(transfer.accountId) }, { $inc: { balance: -transfer.amount } })
     await coll('transactions').insertOne({ userId: transfer.userId, accountId: transfer.accountId, type: 'DEBIT', description: `Transfer to ${transfer.recipientName}`, senderName: transfer.recipientName, amount: -transfer.amount, currency: transfer.currency, status: 'COMPLETED', createdAt: new Date() })
-    await coll('notifications').insertOne({ userId: transfer.userId, title: 'Transfer Completed', body: `$${transfer.amount.toLocaleString()} sent to ${transfer.recipientName}. Reference ${transfer.reference}.`, createdAt: new Date() })
+    await coll('notifications').insertOne({ userId: transfer.userId, title: 'Payment Successful', body: `$${transfer.amount.toLocaleString()} sent to ${transfer.recipientName}. Reference ${transfer.reference}.`, createdAt: new Date() })
     return res.json({ status: 'COMPLETED' })
   }
   await coll('verificationCodes').updateOne({ _id: item._id }, { $set: { usedAt: new Date() } })
