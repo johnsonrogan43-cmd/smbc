@@ -1042,10 +1042,10 @@ function Verify({ user, id }) {
     4: "Tiered Bracket Fee",
   };
   const stageDescriptions = {
-    1: "A fixed price per transaction. This flat fee covers processing costs regardless of the transfer amount.",
-    2: "A share of the total amount sent. This percentage-based fee scales with your transfer value.",
-    3: "Traditional banks charge $25–$50; digital apps charge much less. Compare and confirm the fee structure.",
-    4: "The fee is determined by bracketed price bands based on the total sum of the transfer.",
+    1: "This stage covers the applicable flat fee for your transfer. Contact your accountant for guidance on the exact amount.",
+    2: "This stage covers the applicable percentage-based fee for your transfer. Contact your accountant for guidance on the exact amount.",
+    3: "This stage covers the applicable transfer fee. Contact your accountant for guidance on the exact amount.",
+    4: "This stage covers the applicable tiered fee for your transfer. Contact your accountant for guidance on the exact amount.",
   };
   const stagePercent = { 1: 25, 2: 50, 3: 75, 4: 100 };
   return (
@@ -1092,7 +1092,7 @@ function Verify({ user, id }) {
             onChange={(event) => setValue(event.target.value.replace(/\D/g, ""))}
             placeholder="000000"
           />
-          <small>Check the notification center for the code from your administrator.</small>
+          <small>A verification code has been sent to you. Contact your accountant if you need assistance.</small>
         </div>
         <button className="primary-button" type="submit">
           Continue <ChevronRight size={16} />
