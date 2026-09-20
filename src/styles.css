@@ -565,13 +565,14 @@ textarea { min-height: 88px; resize: vertical; }
 .promo-slider { overflow: hidden; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,.08); margin-bottom: 24px; }
 .dashboard .promo-slider { margin-bottom: 20px; }
 .promo-track { display: flex; transition: transform .7s ease-out; }
-.promo-slide { min-width: 100%; height: 160px; padding: 28px 32px; color: white; display: flex; align-items: center; justify-content: space-between; }
+.promo-slide { min-width: 100%; height: 160px; padding: 28px 32px; color: white; display: flex; align-items: flex-start; justify-content: space-between; position: relative; overflow: hidden; }
+.promo-text { position: relative; z-index: 1; }
 .promo-text h3 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
 .promo-text p { font-size: 13px; opacity: .9; margin-bottom: 16px; }
 .promo-btn { background: white; color: #1A1F36; border: none; padding: 8px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; transition: transform .15s; }
 .promo-btn:hover { transform: scale(1.03); }
-.promo-logo-wrap { background: white; padding: 12px 16px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.1); flex-shrink: 0; }
-.promo-logo { width: 70px; height: auto; display: block; filter: none; object-fit: contain; }
+.promo-logo-wrap { position: absolute; bottom: 16px; right: 20px; background: white; padding: 10px 14px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,.1); z-index: 1; }
+.promo-logo { width: 60px; height: auto; display: block; filter: none; object-fit: contain; }
 .promo-dots { display: flex; justify-content: center; gap: 8px; padding: 10px; background: white; }
 .promo-dots span { width: 8px; height: 8px; border-radius: 50%; background: #D6DEE6; transition: background .3s; }
 .promo-dots span.active { background: #255BE3; }
@@ -584,5 +585,6 @@ textarea { min-height: 88px; resize: vertical; }
   .home-features-inner { grid-template-columns: 1fr; }
   .promo-slide { height: 140px; padding: 20px; }
   .promo-text h3 { font-size: 16px; }
-  .promo-logo-wrap { display: none; }
+  .promo-logo-wrap { bottom: 12px; right: 12px; padding: 8px 10px; }
+  .promo-logo { width: 50px; }
 }
