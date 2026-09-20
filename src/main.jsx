@@ -473,6 +473,7 @@ function CustomerDashboard({ user }) {
           </a>
         }
       />
+      <BankPromoSlider />
       <div className="summary-grid">
         <article className="balance-panel">
           <span className="section-kicker">{t("TOTAL BALANCE")}</span>

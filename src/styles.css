@@ -26,7 +26,7 @@ button:focus-visible { outline: 3px solid rgba(0, 59, 112, .3); outline-offset: 
   justify-content: space-between;
 }
 .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
-.brand-logo { height: 32px; width: auto; display: block; flex-shrink: 0; }
+.brand-logo { height: 32px; width: auto; display: block; flex-shrink: 0; filter: brightness(0) invert(1); }
 .header-tools { display: flex; align-items: center; gap: 6px; color: white; }
 .header-tools button { border: 0; background: none; }
 .header-icon { border: 0; background: none; color: white; display: grid; place-items: center; padding: 8px; border-radius: 6px; transition: background .15s ease; cursor: pointer; }
@@ -563,6 +563,7 @@ textarea { min-height: 88px; resize: vertical; }
 
 /* ── Bank Promo Slider ── */
 .promo-slider { overflow: hidden; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,.08); margin-bottom: 24px; }
+.dashboard .promo-slider { margin-bottom: 20px; }
 .promo-track { display: flex; transition: transform .7s ease-out; }
 .promo-slide { min-width: 100%; height: 160px; padding: 28px 32px; color: white; display: flex; align-items: center; justify-content: space-between; }
 .promo-text h3 { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
