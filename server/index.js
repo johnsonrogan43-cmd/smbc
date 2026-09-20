@@ -155,7 +155,7 @@ async function auth(req, res, next) {
   } catch { res.status(401).json({ error: 'Authentication required' }) }
 }
 const adminOnly = (req, res, next) => req.admin ? next() : res.status(403).json({ error: 'Admin access required' })
-const customerOnly = (req, res, next) => req.user ? next() : res.status(403).json({ error: 'Customer access required' })
+const customerOnly = (req, res, next) => req.user ? next() : res.status(403).json({ error: req.admin ? 'You are logged in as admin. Please log in as a customer.' : 'Customer access required' })
 
 let readyPromise = null
 let lastConnectError = null

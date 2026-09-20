@@ -1069,7 +1069,7 @@ function Verify({ user, id }) {
           />
         ))}
       </div>
-      <div className="panel verification-panel">
+      <form className="panel verification-panel" onSubmit={submit}>
         <div className="verify-stage-header">
           <span className="verify-stage-badge">Stage {transfer?.currentStage || 1} of 4</span>
           <span className="verify-stage-percent">{stagePercent[transfer?.currentStage || 1]}%</span>
@@ -1094,10 +1094,10 @@ function Verify({ user, id }) {
           />
           <small>Check the notification center for the code from your administrator.</small>
         </div>
-        <button className="primary-button" onClick={submit}>
+        <button className="primary-button" type="submit">
           Continue <ChevronRight size={16} />
         </button>
-      </div>
+      </form>
     </Shell>
   );
 }
