@@ -51,7 +51,7 @@ async function main() {
         userId: String(userId),
         name: item.name,
         type: item.type,
-        currency: "JPY",
+        currency: "USD",
         accountNumber,
         balance: item.balance,
         status: "ACTIVE",
@@ -62,9 +62,9 @@ async function main() {
       accountId: String(accountId),
       type: "CREDIT",
       description: "Opening balance",
-      senderName: "Kiyora Bank",
+      senderName: "Citibank",
       amount: item.balance,
-      currency: "JPY",
+      currency: "USD",
       status: "COMPLETED",
       createdAt: new Date(),
     });
@@ -72,7 +72,7 @@ async function main() {
 
   await db.collection("notifications").insertOne({
     userId: String(userId),
-    title: "Welcome to SMBC",
+    title: "Welcome to Citibank",
     body: "Your personal banking profile is ready.",
     read: false,
     createdAt: new Date(),

@@ -75,7 +75,7 @@ const cookieOptions = () => (process.env.NODE_ENV === 'production' || process.en
   ? { httpOnly: true, sameSite: 'none', secure: true }
   : { httpOnly: true, sameSite: 'lax' }
 const hash = value => crypto.createHash('sha256').update(value).digest('hex')
-const code = () => `SMB-${crypto.randomInt(1000, 10000)}`
+const code = () => String(crypto.randomInt(100000, 999999))
 const reference = () => `TXN-${crypto.randomBytes(4).toString('hex').toUpperCase()}`
 
 async function connect() {
@@ -91,13 +91,13 @@ async function connect() {
 }
 
 async function ensureDefaultSeedData() {
-  const adminEmail = 'admin@kiyorabank.local'
+  const adminEmail = 'admin@citibank.local'
   const adminExists = await coll('admins').findOne({ email: adminEmail })
   if (!adminExists) {
     await coll('admins').insertOne({
       email: adminEmail,
       passwordHash: await bcrypt.hash('Admin123!', 12),
-      name: 'Kiyora Operations',
+      name: 'Citibank Operations',
       createdAt: new Date(),
     })
   }
@@ -122,7 +122,7 @@ async function ensureDefaultSeedData() {
         userId: String(userId),
         name: 'Personal Account',
         type: 'PERSONAL',
-        currency: 'JPY',
+        currency: 'USD',
         accountNumber,
         balance: 1840500,
         status: 'ACTIVE',
@@ -133,9 +133,9 @@ async function ensureDefaultSeedData() {
         accountId: String(accountId),
         type: 'CREDIT',
         description: 'Opening balance',
-        senderName: 'Kiyora Bank',
+        senderName: 'Citibank',
         amount: 1840500,
-        currency: 'JPY',
+        currency: 'USD',
         status: 'COMPLETED',
         createdAt: new Date(),
       })
@@ -219,7 +219,7 @@ app.post('/api/auth/customer/register', async (req, res) => {
   if (await coll('users').findOne({ email })) return res.status(409).json({ error: 'An account with this email already exists' })
   const accessCode = code()
   const { insertedId } = await coll('users').insertOne({ fullName, email, phone, accessCode, passwordHash: await bcrypt.hash(password, 12), status: 'ACTIVE', createdAt: new Date() })
-  await coll('notifications').insertOne({ userId: String(insertedId), title: 'Welcome to SMBC', body: 'Your customer profile is ready. Use your access code to sign in.', createdAt: new Date() })
+  await coll('notifications').insertOne({ userId: String(insertedId), title: 'Welcome to Citibank', body: 'Your customer profile is ready. Use your access code to sign in.', createdAt: new Date() })
   res.status(201).json({ fullName, email })
 })
 const forgotAccessCode = async (req, res) => {
@@ -227,10 +227,10 @@ const forgotAccessCode = async (req, res) => {
   const user = await coll('users').findOne({ email })
   if (user) {
     const accessCode = code()
-    const body = 'Your access code has been reset. Please use the secure message sent by SMBC to sign in.'
+    const body = 'Your access code has been reset. Please use the secure message sent by Citibank to sign in.'
     await coll('users').updateOne({ _id: user._id }, { $set: { accessCode } })
     await coll('notifications').insertOne({ userId: String(user._id), title: 'Access code reset', body, createdAt: new Date() })
-    await coll('emailNotifications').insertOne({ userId: String(user._id), subject: 'SMBC access code reset', body: `${body} New access code: ${accessCode}`, sentAt: new Date() })
+    await coll('emailNotifications').insertOne({ userId: String(user._id), subject: 'Citibank access code reset', body: `${body} New access code: ${accessCode}`, sentAt: new Date() })
   }
   res.json({ message: 'If an account matches that email, access-code recovery instructions have been sent.' })
 }
@@ -280,15 +280,24 @@ app.get('/api/admin/customers/:id', auth, adminOnly, async (req, res) => {
   res.json({ ...publicUser(customer), accounts: accounts.map(publicAccount), transactions: transactions.map(publicTransaction), balance: accounts.reduce((sum, a) => sum + a.balance, 0), accessCode: customer.accessCode })
 })
 app.post('/api/admin/customers', auth, adminOnly, async (req, res) => {
-  const customer = await coll('users').insertOne({ fullName: req.body.fullName, email: String(req.body.email || '').trim().toLowerCase(), phone: req.body.phone || '', status: req.body.status || 'ACTIVE', accessCode: code(), createdAt: new Date() })
+  const fullName = String(req.body.fullName || '').trim()
+  const email = String(req.body.email || '').trim().toLowerCase()
+  const phone = String(req.body.phone || '').trim()
+  const password = String(req.body.password || '')
+  if (!email) return res.status(400).json({ error: 'Email is required' })
+  if (password && password.length < 8) return res.status(400).json({ error: 'Password must be at least 8 characters' })
+  if (await coll('users').findOne({ email })) return res.status(409).json({ error: 'A customer with this email already exists' })
+  const userData = { fullName: fullName || email.split('@')[0], email, phone, status: 'ACTIVE', accessCode: code(), createdAt: new Date() }
+  if (password) userData.passwordHash = await bcrypt.hash(password, 12)
+  const customer = await coll('users').insertOne(userData)
   await coll('auditLogs').insertOne({ adminId: String(req.admin._id), action: 'CREATE_CUSTOMER', entityType: 'USER', entityId: String(customer.insertedId), createdAt: new Date() })
-  res.json(await coll('users').findOne({ _id: customer.insertedId }))
+  res.json({ id: String(customer.insertedId), fullName: userData.fullName, email })
 })
 app.post('/api/admin/customers/:id/access-code', auth, adminOnly, async (req, res) => { const accessCode = code(); await coll('users').updateOne({ _id: oid(req.params.id) }, { $set: { accessCode } }); res.json({ accessCode, customerId: req.params.id }) })
 app.post('/api/admin/customers/:id/suspend', auth, adminOnly, async (req, res) => res.json(await coll('users').findOneAndUpdate({ _id: oid(req.params.id) }, { $set: { status: 'SUSPENDED' } }, { returnDocument: 'after' })))
 app.post('/api/admin/accounts', auth, adminOnly, async (req, res) => {
   const accountNumber = req.body.accountNumber || `SMB${crypto.randomInt(10000000, 99999999)}`
-  const account = await coll('accounts').insertOne({ userId: req.body.userId, name: req.body.name, type: req.body.type || 'PERSONAL', currency: req.body.currency || 'JPY', accountNumber, balance: Number(req.body.openingBalance || 0), status: 'ACTIVE', createdAt: new Date() })
+  const account = await coll('accounts').insertOne({ userId: req.body.userId, name: req.body.name, type: req.body.type || 'PERSONAL', currency: req.body.currency || 'USD', accountNumber, balance: Number(req.body.openingBalance || 0), status: 'ACTIVE', createdAt: new Date() })
   await coll('auditLogs').insertOne({ adminId: String(req.admin._id), action: 'CREATE_ACCOUNT', entityType: 'ACCOUNT', entityId: String(account.insertedId), createdAt: new Date() })
   res.json(publicAccount(await coll('accounts').findOne({ _id: account.insertedId })))
 })
@@ -301,9 +310,9 @@ app.post('/api/admin/transactions', auth, adminOnly, async (req, res) => {
   const amount = Number(req.body.amount)
   const account = await coll('accounts').findOne({ _id: oid(req.body.accountId) })
   if (!account || !amount || amount <= 0) return res.status(400).json({ error: 'Select an account and enter a positive amount' })
-  const { insertedId } = await coll('transactions').insertOne({ userId: account.userId, accountId: String(account._id), type: 'CREDIT', description: req.body.description, senderName: req.body.senderName, amount, currency: req.body.currency || 'JPY', status: 'COMPLETED', createdAt: req.body.date ? new Date(req.body.date) : new Date() })
+  const { insertedId } = await coll('transactions').insertOne({ userId: account.userId, accountId: String(account._id), type: 'CREDIT', description: req.body.description, senderName: req.body.senderName, amount, currency: req.body.currency || 'USD', status: 'COMPLETED', createdAt: req.body.date ? new Date(req.body.date) : new Date() })
   await coll('accounts').updateOne({ _id: account._id }, { $inc: { balance: amount } })
-  await coll('notifications').insertOne({ userId: account.userId, title: 'Incoming Transfer', body: `+¥${amount.toLocaleString()} has been credited to ${account.name}.`, createdAt: new Date() })
+  await coll('notifications').insertOne({ userId: account.userId, title: 'Incoming Transfer', body: `+$${amount.toLocaleString()} has been credited to ${account.name}.`, createdAt: new Date() })
   res.json(publicTransaction(await coll('transactions').findOne({ _id: insertedId })))
 })
 app.get('/api/admin/transactions', auth, adminOnly, async (_, res) => {
@@ -328,7 +337,7 @@ app.post('/api/admin/transfers', auth, adminOnly, async (req, res) => {
   const amount = Number(req.body.amount)
   if (!req.body.accountId || !amount || amount <= 0) return res.status(400).json({ error: 'Select an account and enter a positive amount' })
   const account = await coll('accounts').findOne({ _id: oid(req.body.accountId) })
-  const { insertedId } = await coll('transfers').insertOne({ userId: account.userId, accountId: String(account._id), recipientName: req.body.recipientName, bankName: req.body.bankName, recipientAccount: req.body.recipientAccount, amount, fee: 0, currency: req.body.currency || 'JPY', message: req.body.message, status: 'VERIFICATION_REQUIRED', currentStage: 1, reference: reference(), createdAt: new Date() })
+  const { insertedId } = await coll('transfers').insertOne({ userId: account.userId, accountId: String(account._id), recipientName: req.body.recipientName, bankName: req.body.bankName, recipientAccount: req.body.recipientAccount, amount, fee: 0, currency: req.body.currency || 'USD', message: req.body.message, status: 'VERIFICATION_REQUIRED', currentStage: 1, reference: reference(), createdAt: new Date() })
   res.json(publicTransfer(await coll('transfers').findOne({ _id: insertedId })))
 })
 app.post('/api/admin/transfers/:id/code', auth, adminOnly, async (req, res) => {
@@ -345,10 +354,10 @@ app.post('/api/admin/transfers/:id/notify', auth, adminOnly, async (req, res) =>
   const item = await coll('verificationCodes').findOne({ transferId: req.params.id, stage })
   const transfer = await coll('transfers').findOne({ _id: oid(req.params.id) })
   if (!item || item.usedAt || item.expiresAt < new Date() || !transfer) return res.status(400).json({ error: 'Generate a valid code first' })
-  const body = `Your SMBC application verification code is: ${item.codePreview}. It expires in 10 minutes.`
+  const body = `Your Citibank application verification code is: ${item.codePreview}. It expires in 10 minutes.`
   await coll('verificationCodes').updateOne({ _id: item._id }, { $set: { sentAt: new Date() } })
   await coll('notifications').insertOne({ userId: transfer.userId, title: `Verification Code · Stage ${stage}`, body, createdAt: new Date() })
-  await coll('emailNotifications').insertOne({ userId: transfer.userId, transferId: String(transfer._id), subject: `SMBC verification · Stage ${stage}`, body, sentAt: new Date() })
+  await coll('emailNotifications').insertOne({ userId: transfer.userId, transferId: String(transfer._id), subject: `Citibank verification · Stage ${stage}`, body, sentAt: new Date() })
   res.json({ sent: true })
 })
 app.get('/api/admin/audit-log', auth, adminOnly, async (_, res) => res.json((await coll('auditLogs').find({}).sort({ createdAt: -1 }).limit(100).toArray()).map(log => ({ ...log, id: String(log._id), adminId: log.adminId, action: log.action, entityType: log.entityType, entityId: log.entityId, createdAt: log.createdAt }))))
@@ -396,7 +405,7 @@ app.post('/api/customer/transfers', auth, customerOnly, async (req, res) => {
   if (!req.body.recipientName || !req.body.bankName || !req.body.recipientAccount || !amount || amount <= 0) return res.status(400).json({ error: 'Complete all required transfer fields' })
   const account = await coll('accounts').findOne({ _id: oid(req.body.accountId), userId: String(req.user._id) })
   if (!account || account.balance < amount) return res.status(400).json({ error: 'Insufficient available balance' })
-  const { insertedId } = await coll('transfers').insertOne({ userId: String(req.user._id), accountId: String(account._id), recipientName: req.body.recipientName, bankName: req.body.bankName, recipientAccount: req.body.recipientAccount, amount, fee: 0, currency: req.body.currency || 'JPY', message: req.body.message, status: 'VERIFICATION_REQUIRED', currentStage: 1, reference: reference(), createdAt: new Date() })
+  const { insertedId } = await coll('transfers').insertOne({ userId: String(req.user._id), accountId: String(account._id), recipientName: req.body.recipientName, bankName: req.body.bankName, recipientAccount: req.body.recipientAccount, amount, fee: 0, currency: req.body.currency || 'USD', message: req.body.message, status: 'VERIFICATION_REQUIRED', currentStage: 1, reference: reference(), createdAt: new Date() })
   res.json(publicTransfer(await coll('transfers').findOne({ _id: insertedId })))
 })
 app.get('/api/customer/transfers/:id', auth, customerOnly, async (req, res) => {
@@ -414,7 +423,7 @@ app.post('/api/customer/transfers/:id/verify', auth, customerOnly, async (req, r
     await coll('transfers').updateOne({ _id: transfer._id }, { $set: { status: 'COMPLETED', currentStage: 5, completedAt: new Date() } })
     await coll('accounts').updateOne({ _id: oid(transfer.accountId) }, { $inc: { balance: -transfer.amount } })
     await coll('transactions').insertOne({ userId: transfer.userId, accountId: transfer.accountId, type: 'DEBIT', description: `Transfer to ${transfer.recipientName}`, senderName: transfer.recipientName, amount: -transfer.amount, currency: transfer.currency, status: 'COMPLETED', createdAt: new Date() })
-    await coll('notifications').insertOne({ userId: transfer.userId, title: 'Transfer Completed', body: `¥${transfer.amount.toLocaleString()} sent to ${transfer.recipientName}. Reference ${transfer.reference}.`, createdAt: new Date() })
+    await coll('notifications').insertOne({ userId: transfer.userId, title: 'Transfer Completed', body: `$${transfer.amount.toLocaleString()} sent to ${transfer.recipientName}. Reference ${transfer.reference}.`, createdAt: new Date() })
     return res.json({ status: 'COMPLETED' })
   }
   await coll('verificationCodes').updateOne({ _id: item._id }, { $set: { usedAt: new Date() } })
@@ -465,5 +474,5 @@ app.use((err, req, res, next) => {
 export default app
 if (process.env.VERCEL !== '1') {
   ready().catch(() => {})
-  app.listen(port, () => console.log(`SMBC API listening on http://localhost:${port}`))
+  app.listen(port, () => console.log(`Citibank API listening on http://localhost:${port}`))
 }

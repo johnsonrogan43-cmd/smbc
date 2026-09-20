@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import {
   ArrowLeftRight,
@@ -35,11 +35,12 @@ const api = async (path, options = {}) => {
   if (!response.ok) throw new Error(data.error || "Request failed");
   return data;
 };
-const logout = async () => {
+const logout = async (role = null) => {
   await api("/auth/logout", { method: "POST" }).catch(() => {});
-  window.location.href = "/login";
+  const r = role || window.__smbcLastRole || null;
+  window.location.href = r === "admin" ? "/admin/login" : "/login";
 };
-const yen = (value) => `¥${Number(value || 0).toLocaleString("ja-JP")}`;
+const yen = (value) => `$${Number(value || 0).toLocaleString("en-US")}`;
 const initials = (name) =>
   (name || "KY")
     .split(" ")
@@ -68,7 +69,7 @@ const translations = {
   "Sign in": "ログイン",
   "Signing in...": "ログイン中...",
   "Register for online banking": "オンラインバンキング登録",
-  "SMBC OPERATIONS": "SMBC運用管理",
+  "SMBC OPERATIONS": "CITI 運用管理",
   "WORKSPACE": "ワークスペース",
   "Operations dashboard": "運用ダッシュボード",
   "Customers": "顧客数",
@@ -138,17 +139,17 @@ function LanguageSwitcher() {
     </div>
   );
 }
-function Brand() {
+function Brand({ admin = false }) {
   return (
-    <a className="brand" href="/login">
+    <a className="brand" href={admin ? "/admin/dashboard" : "/dashboard"}>
       <span className="brand-mark" aria-hidden="true">
         <i />
         <i />
         <i />
       </span>
       <span className="brand-name">
-        <b>SMBC</b>
-        <small>Sumitomo Mitsui Banking Corporation</small>
+        <b>citi</b>
+        <small>Citibank, N.A.</small>
       </span>
     </a>
   );
@@ -157,7 +158,7 @@ function Header({ user, admin = false, onLogout }) {
   return (
     <header className="top-header">
       <div className="header-inner">
-        <Brand />
+        <Brand admin={admin} />
         <div className="header-tools">
           <LanguageSwitcher />
           <a className="header-icon" href={admin ? "/admin/notifications" : "/notifications"} aria-label="Notifications">
@@ -269,12 +270,12 @@ function Login({ admin = false }) {
   return (
     <div className="login-page">
       <div className="login-panel">
-        <Brand />
+        <Brand admin={admin} />
         <div className="login-heading">
           <span className="section-kicker">
             {admin ? (language === "ja" ? "管理者アクセス" : "OPERATIONS ACCESS") : t("PERSONAL BANKING")}
           </span>
-          <h1>{admin ? t("Admin Portal") : language === "ja" ? "SMBCへようこそ" : "Welcome to SMBC"}</h1>
+          <h1>{admin ? t("Admin Portal") : language === "ja" ? "SMBCへようこそ" : "Welcome to Citibank"}</h1>
           <p>
             {admin
               ? language === "ja" ? "顧客、口座、振込を管理するにはログインしてください。" : "Sign in to manage customers, accounts and transfers."
@@ -332,6 +333,11 @@ function Login({ admin = false }) {
         {!admin && (
           <a className="portal-link register-link" href="/register">
             {t("Register for online banking")} <ChevronRight size={15} />
+          </a>
+        )}
+        {!admin && (
+          <a className="portal-link" href="/admin/login">
+            {t("Admin Portal")} <ChevronRight size={15} />
           </a>
         )}
       </div>
@@ -421,7 +427,7 @@ function AdminDashboard({ user }) {
   return (
     <Shell user={user} admin active="/admin/dashboard" setActive={() => {}}>
       <PageTitle
-        kicker="KIYORA OPERATIONS"
+        kicker="CITI OPERATIONS"
         title={language === "ja" ? "運用ダッシュボード" : "Operations dashboard"}
         subtitle={language === "ja" ? "共有データベースの最新概要。" : "Live overview from the shared banking database."}
       />
@@ -443,7 +449,7 @@ function AdminDashboard({ user }) {
       <div className="panel two-column">
         <div>
           <span className="section-kicker">WORKSPACE</span>
-          <h2>{language === "ja" ? "SMBCを管理" : "Manage SMBC"}</h2>
+          <h2>{language === "ja" ? "SMBCを管理" : "Manage Citibank"}</h2>
           <p>
             Customers, accounts, incoming funds and verification are linked
             through one persistent data store.
@@ -837,7 +843,7 @@ function TransferNew({ user }) {
     bankName: "Hikari Regional Bank",
     recipientAccount: "",
     amount: "",
-    currency: "JPY",
+    currency: "USD",
     message: "",
   });
   const [error, setError] = useState("");
@@ -924,7 +930,7 @@ function TransferNew({ user }) {
             />
           </label>
           <label>
-            Amount (JPY)
+            Amount (USD)
             <input
               required
               min="1"
@@ -1036,7 +1042,7 @@ function Verify({ user, id }) {
       <PageTitle
         kicker="APPLICATION VERIFICATION"
         title={`Stage ${transfer?.currentStage || 1} of 4`}
-        subtitle="Enter the fictional code sent by SMBC."
+        subtitle="Enter the fictional code sent by Citibank."
       />
       <div className="verification-dots">
         {[1, 2, 3, 4].map((stage) => (
@@ -1108,21 +1114,63 @@ function DataListPage({ user, admin, title, kicker, subtitle, active, items, chi
 function CustomerAccounts({ user }) { const [data, setData] = useState(null); useEffect(() => { api('/customer/dashboard').then(setData) }, []); return <Shell user={user} active="/accounts" setActive={() => {}}><PageTitle kicker="PERSONAL BANKING" title="Accounts" subtitle="Review your accounts and available balances." /><section className="panel">{data?.accounts.map(account => <a className="account-row" href={`/accounts/${account.id}`} key={account.id}><div className="account-info"><b>{account.name}</b><span>{account.maskedNumber} · {account.currency}</span></div><strong>{yen(account.balance)}</strong><ChevronRight size={16} /></a>)}</section></Shell> }
 function CustomerTransactions({ user }) { const [data, setData] = useState(null); useEffect(() => { api('/customer/dashboard').then(setData) }, []); return <Shell user={user} active="/transactions" setActive={() => {}}><PageTitle kicker="PERSONAL BANKING" title="Transactions" subtitle="Your complete transaction history." /><section className="panel"><PanelHeading kicker="ACTIVITY" title="Transaction history" />{data?.transactions.map(transaction => <TransactionRow transaction={transaction} key={transaction.id} />)}</section></Shell> }
 function CustomerTransfers({ user }) { const [data, setData] = useState(null); useEffect(() => { api('/customer/dashboard').then(setData) }, []); return <Shell user={user} active="/transfers" setActive={() => {}}><PageTitle kicker="PERSONAL BANKING" title="Transfers" subtitle="Create and track your transfers." action={<a className="primary-button compact" href="/transfers/new"><Send size={16} /> New transfer</a>} /><section className="panel">{data?.transfers?.map(item => <div className="customer-row" key={item.id}><div className="account-info"><b>{item.reference}</b><span>{item.recipientName} · {item.status}</span></div><strong>{yen(item.amount)}</strong><a className="secondary-button" href={`/transfers/${item.id}`}>View</a></div>)}</section></Shell> }
-function CustomerProfile({ user }) { return <Shell user={user} active="/profile" setActive={() => {}}><PageTitle kicker="PERSONAL BANKING" title="Profile" subtitle="Your registered customer information." /><section className="panel form-stack profile-card"><div className="avatar">{initials(user.name)}</div><label>Full name<input readOnly value={user.name} /></label><label>Account role<input readOnly value="Customer" /></label><p>For profile changes, contact SMBC support.</p></section></Shell> }
-function SettingsPage({ user, admin = false }) { return <Shell user={user} admin={admin} active={admin ? '/admin/settings' : '/settings'} setActive={() => {}}><PageTitle kicker={admin ? 'KIYORA OPERATIONS' : 'PERSONAL BANKING'} title="Settings" subtitle="Manage your portal preferences." /><section className="panel form-stack"><label>Language<select defaultValue={localStorage.getItem('smbc-language') || 'en'} onChange={event => { localStorage.setItem('smbc-language', event.target.value); document.documentElement.lang = event.target.value; window.dispatchEvent(new Event('smbc-language-change')) }}><option value="en">English</option><option value="ja">日本語</option></select></label><label>Security status<input readOnly value="Secure connection enabled" /></label></section></Shell> }
+function CustomerProfile({ user }) { return <Shell user={user} active="/profile" setActive={() => {}}><PageTitle kicker="PERSONAL BANKING" title="Profile" subtitle="Your registered customer information." /><section className="panel form-stack profile-card"><div className="avatar">{initials(user.name)}</div><label>Full name<input readOnly value={user.name} /></label><label>Account role<input readOnly value="Customer" /></label><p>For profile changes, contact Citibank support.</p></section></Shell> }
+function SettingsPage({ user, admin = false }) { return <Shell user={user} admin={admin} active={admin ? '/admin/settings' : '/settings'} setActive={() => {}}><PageTitle kicker={admin ? 'CITI OPERATIONS' : 'PERSONAL BANKING'} title="Settings" subtitle="Manage your portal preferences." /><section className="panel form-stack"><label>Language<select defaultValue={localStorage.getItem('smbc-language') || 'en'} onChange={event => { localStorage.setItem('smbc-language', event.target.value); document.documentElement.lang = event.target.value; window.dispatchEvent(new Event('smbc-language-change')) }}><option value="en">English</option><option value="ja">日本語</option></select></label><label>Security status<input readOnly value="Secure connection enabled" /></label></section></Shell> }
 function AdminAccounts({ user }) {
   const [customers, setCustomers] = useState([]);
   const [accounts, setAccounts] = useState([]);
-  const [form, setForm] = useState({ userId: "", name: "", type: "PERSONAL", currency: "JPY", openingBalance: "" });
+  const [form, setForm] = useState({ userId: "", name: "", type: "PERSONAL", currency: "USD", openingBalance: "", fullName: "", email: "", phone: "", password: "" });
   const [message, setMessage] = useState("");
+  const [addBalanceAccountId, setAddBalanceAccountId] = useState(null);
+  const [addBalanceAmount, setAddBalanceAmount] = useState("");
+  const [addBalanceDesc, setAddBalanceDesc] = useState("");
   const load = () => api("/admin/accounts").then(setAccounts);
   useEffect(() => { load(); api("/admin/customers").then(setCustomers) }, []);
   const create = async (event) => {
     event.preventDefault();
     try {
-      await api("/admin/accounts", { method: "POST", body: JSON.stringify({ ...form, openingBalance: Number(form.openingBalance || 0) }) });
-      setForm({ userId: "", name: "", type: "PERSONAL", currency: "JPY", openingBalance: "" });
+      let userId = form.userId;
+      if (!userId && form.email && form.password) {
+        const customer = await api("/admin/customers", {
+          method: "POST",
+          body: JSON.stringify({
+            fullName: form.fullName || form.email.split("@")[0],
+            email: form.email,
+            phone: form.phone || "",
+            password: form.password,
+          }),
+        });
+        userId = customer.id;
+        await api("/admin/customers").then(setCustomers);
+      }
+      if (!userId) { setMessage("Select a customer or enter email and password to create one."); return; }
+      await api("/admin/accounts", {
+        method: "POST",
+        body: JSON.stringify({ userId, name: form.name, type: form.type, currency: form.currency, openingBalance: Number(form.openingBalance || 0) }),
+      });
+      setForm({ userId: "", name: "", type: "PERSONAL", currency: "USD", openingBalance: "", fullName: "", email: "", phone: "", password: "" });
       setMessage("Account created successfully.");
+      load();
+    } catch (err) { setMessage(err.message); }
+  };
+  const addBalance = async (accountId) => {
+    const amount = Number(addBalanceAmount);
+    if (!amount || amount <= 0) { setMessage("Enter a valid amount."); return; }
+    try {
+      await api("/admin/transactions", {
+        method: "POST",
+        body: JSON.stringify({
+          accountId,
+          amount,
+          description: addBalanceDesc || "Balance credit",
+          senderName: "Citibank",
+          currency: "USD",
+        }),
+      });
+      setMessage(`$${amount.toLocaleString()} added successfully.`);
+      setAddBalanceAccountId(null);
+      setAddBalanceAmount("");
+      setAddBalanceDesc("");
       load();
     } catch (err) { setMessage(err.message); }
   };
@@ -1132,13 +1180,32 @@ function AdminAccounts({ user }) {
       <div className="panel form-panel">
         <span className="section-kicker">CREATE ACCOUNT</span>
         <form className="form-stack" onSubmit={create}>
+          <label>Existing customer (optional)
+            <select value={form.userId} onChange={(event) => setForm({ ...form, userId: event.target.value })}>
+              <option value="">-- Select existing customer or create new below --</option>
+              {customers.map(customer => <option key={customer.id} value={customer.id}>{customer.fullName} · {customer.email}</option>)}
+            </select>
+          </label>
+          {!form.userId && (
+            <>
+              <div className="form-grid">
+                <label>Full name
+                  <input value={form.fullName} onChange={(event) => setForm({ ...form, fullName: event.target.value })} placeholder="John Doe" />
+                </label>
+                <label>Email *
+                  <input required type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="john@example.com" />
+                </label>
+                <label>Phone
+                  <input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} placeholder="+1 555 123 4567" />
+                </label>
+                <label>Password *
+                  <input required type="password" minLength="8" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} placeholder="Min 8 characters" />
+                </label>
+              </div>
+              <span className="section-kicker" style={{ marginTop: 8 }}>ACCOUNT DETAILS</span>
+            </>
+          )}
           <div className="form-grid">
-            <label>Customer
-              <select required value={form.userId} onChange={(event) => setForm({ ...form, userId: event.target.value })}>
-                <option value="" disabled>Select a customer</option>
-                {customers.map(customer => <option key={customer.id} value={customer.id}>{customer.fullName} · {customer.email}</option>)}
-              </select>
-            </label>
             <label>Account name
               <input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} placeholder="Personal Account" />
             </label>
@@ -1151,7 +1218,6 @@ function AdminAccounts({ user }) {
             </label>
             <label>Currency
               <select value={form.currency} onChange={(event) => setForm({ ...form, currency: event.target.value })}>
-                <option value="JPY">JPY</option>
                 <option value="USD">USD</option>
                 <option value="EUR">EUR</option>
               </select>
@@ -1169,13 +1235,52 @@ function AdminAccounts({ user }) {
       <section className="panel">
         <PanelHeading kicker="DATABASE RECORDS" title="Account list" />
         {accounts.map(account => (
-          <div className="customer-row" key={account.id}>
-            <div className="account-info">
-              <b>{account.name}</b>
-              <span>{account.accountNumber} · {account.customer} · {account.email} · {account.currency}</span>
+          <div key={account.id}>
+            <div className="customer-row">
+              <div className="account-info">
+                <b>{account.name}</b>
+                <span>{account.accountNumber} · {account.customer} · {account.email} · {account.currency}</span>
+              </div>
+              <span className="status-badge">{account.status}</span>
+              <strong>{yen(account.balance)}</strong>
+              <button
+                className="secondary-button"
+                onClick={() => setAddBalanceAccountId(addBalanceAccountId === account.id ? null : account.id)}
+              >
+                Add Balance
+              </button>
             </div>
-            <span className="status-badge">{account.status}</span>
-            <strong>{yen(account.balance)}</strong>
+            {addBalanceAccountId === account.id && (
+              <div className="add-balance-form">
+                <label>
+                  Amount
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={addBalanceAmount}
+                    onChange={(e) => setAddBalanceAmount(e.target.value)}
+                    placeholder="Enter amount"
+                  />
+                </label>
+                <label>
+                  Description
+                  <input
+                    value={addBalanceDesc}
+                    onChange={(e) => setAddBalanceDesc(e.target.value)}
+                    placeholder="Balance credit"
+                  />
+                </label>
+                <div className="add-balance-actions">
+                  <button className="primary-button" type="button" onClick={() => addBalance(account.id)}>
+                    Confirm
+                  </button>
+                  <button className="secondary-button" type="button" onClick={() => { setAddBalanceAccountId(null); setAddBalanceAmount(""); setAddBalanceDesc(""); }}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </section>
@@ -1204,7 +1309,7 @@ function CustomerAccountDetail({ user, id }) {
 function AdminTransactions({ user }) {
   const [accounts, setAccounts] = useState([]);
   const [items, setItems] = useState([]);
-  const [form, setForm] = useState({ accountId: '', amount: '', description: '', senderName: '', currency: 'JPY', date: '' });
+  const [form, setForm] = useState({ accountId: '', amount: '', description: '', senderName: '', currency: 'USD', date: '' });
   const [message, setMessage] = useState('');
   const load = () => api('/admin/transactions').then(setItems);
   useEffect(() => { load(); api('/admin/accounts').then(setAccounts) }, []);
@@ -1212,7 +1317,7 @@ function AdminTransactions({ user }) {
     e.preventDefault();
     try {
       await api('/admin/transactions', { method: 'POST', body: JSON.stringify({ ...form, amount: Number(form.amount) }) });
-      setForm({ accountId: '', amount: '', description: '', senderName: '', currency: 'JPY', date: '' });
+      setForm({ accountId: '', amount: '', description: '', senderName: '', currency: 'USD', date: '' });
       setMessage('Incoming funds credited successfully.');
       load();
     } catch (err) { setMessage(err.message); }
@@ -1230,7 +1335,7 @@ function AdminTransactions({ user }) {
                 {accounts.map(a => <option key={a.id} value={a.id}>{a.customer} · {a.name} · {a.accountNumber}</option>)}
               </select>
             </label>
-            <label>Amount (JPY)
+            <label>Amount (USD)
               <input required type="number" min="1" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} placeholder="100000" />
             </label>
             <label>Description
@@ -1241,7 +1346,7 @@ function AdminTransactions({ user }) {
             </label>
             <label>Currency
               <select value={form.currency} onChange={e => setForm({ ...form, currency: e.target.value })}>
-                <option value="JPY">JPY</option><option value="USD">USD</option><option value="EUR">EUR</option>
+                <option value="USD">USD</option><option value="USD">USD</option><option value="EUR">EUR</option>
               </select>
             </label>
             <label>Date (optional)
@@ -1374,20 +1479,25 @@ function App() {
     }
 
     api("/auth/me")
-      .then(setAuth)
+      .then((me) => {
+        if (me && me.role) window.__smbcLastRole = me.role;
+        setAuth(me);
+      })
       .catch(() => setAuth(false));
   }, [path, isPublicRoute]);
 
-  const logout = async () => {
-    await api("/auth/logout", { method: "POST" });
-    window.location.href = "/login";
+  const localLogout = async () => {
+    const role = auth?.role || window.__smbcLastRole || null;
+    await api("/auth/logout", { method: "POST" }).catch(() => {});
+    window.location.href = role === "admin" ? "/admin/login" : "/login";
   };
   if (path === "/admin/login") return <Login admin />;
   if (path === "/register") return <Register />;
   if (path === "/forgot-access-code") return <ForgotAccessCode />;
-  if (path === "/login" || path === "/") return <Login />;
+  if (path === "/login") return <Login />;
+  if (path === "/" || path === "") return <Login />;
   if (auth === null)
-    return <div className="loading-page">Loading SMBC...</div>;
+    return <div className="loading-page">Loading Citibank...</div>;
   if (!auth) {
     window.location.href = path.startsWith("/admin")
       ? "/admin/login"
@@ -1395,14 +1505,15 @@ function App() {
     return null;
   }
   if (path.startsWith("/admin") && auth.role !== "admin") {
-    window.location.href = "/login";
+    window.location.href = "/dashboard";
     return null;
   }
   if (!path.startsWith("/admin") && auth.role !== "customer") {
-    window.location.href = "/admin/login";
+    window.location.href = "/admin/dashboard";
     return null;
   }
   if (auth.role === "admin") {
+    if (path === "/admin" || path === "/admin/" || path === "/admin/dashboard") return <AdminDashboard user={auth} onLogout={localLogout} />;
     if (path === "/admin/customers") return <AdminCustomers user={auth} />;
     if (path.startsWith("/admin/customers/")) return <AdminCustomerDetail user={auth} id={path.split("/").pop()} />;
     if (path === "/admin/admins") return <AdminManagement user={auth} />;
@@ -1415,8 +1526,10 @@ function App() {
     if (path === "/admin/verification") return <AdminVerification user={auth} />;
     if (path === "/admin/notifications") return <AdminNotifications user={auth} />;
     if (path === "/admin/settings") return <SettingsPage user={auth} admin />;
-    return <AdminDashboard user={auth} onLogout={logout} />;
+    window.location.href = "/admin/dashboard";
+    return null;
   }
+  if (path === "/dashboard" || path === "") return <CustomerDashboard user={auth} onLogout={localLogout} />;
   if (path === "/accounts") return <CustomerAccounts user={auth} />;
   if (path.startsWith("/accounts/")) return <CustomerAccountDetail user={auth} id={path.split("/").pop()} />;
   if (path === "/transactions") return <CustomerTransactions user={auth} />;
@@ -1429,6 +1542,7 @@ function App() {
   if (path === "/notifications") return <Notifications user={auth} />;
   if (path === "/profile") return <CustomerProfile user={auth} />;
   if (path === "/settings") return <SettingsPage user={auth} />;
-  return <CustomerDashboard user={auth} onLogout={logout} />;
+  window.location.href = "/dashboard";
+  return null;
 }
 createRoot(document.getElementById("root")).render(<App />);
